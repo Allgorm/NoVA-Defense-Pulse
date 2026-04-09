@@ -78,7 +78,7 @@ App opens at `http://localhost:8501`
 
 I work at the intersection of private equity real estate and the defense contracting ecosystem. This tool is a stripped-down version of the contract intelligence layer I've been developing to inform acquisition decisions.
 
-The core concept mirrors what Palantir Foundry does at enterprise scale: pipe messy government data through a structured interface so analysts can make faster, better-informed decisions. This is a 150-line version of that idea.
+The core concept mirrors what Palantir Foundry does at enterprise scale: pipe messy government data through a structured interface so analysts can make faster, better-informed decisions. This is a lite version of that idea.
 
 ---
 
