@@ -15,11 +15,16 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
     html, body, [class*="css"] { font-family: 'IBM Plex Sans', sans-serif; }
-    .metric-card { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 1.2rem 1.5rem; margin-bottom: 0.5rem; }
-    .metric-value { font-family: 'IBM Plex Mono', monospace; font-size: 1.8rem; font-weight: 600; color: #58a6ff; }
-    .metric-label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.08em; }
+    .metric-card { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 1rem 1.2rem; margin-bottom: 0.5rem; min-height: 90px; display: flex; flex-direction: column; justify-content: center; }
+    .metric-value { font-family: 'IBM Plex Mono', monospace; font-size: 1.4rem; font-weight: 600; color: #58a6ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .metric-label { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem; }
     .submarket-tag { display: inline-block; background: #161b22; border: 1px solid #30363d; border-radius: 3px; padding: 2px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: #79c0ff; margin: 2px; }
     h1 { font-family: 'IBM Plex Mono', monospace !important; }
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    [data-testid="stStatusWidget"] {display: none;}
+    [data-testid="stToolbar"] {display: none;}
+    [data-testid="collapsedControl"] {display: block !important; visibility: visible !important;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -52,9 +57,9 @@ def fetch_top_contractors(county_fips, fiscal_year, agency_id):
     }
     if agency_id:
         filters["agencies"] = [{"type": "awarding", "tier": "toptier", "toptier_code": agency_id}]
-    payload = {"category": "recipient_duns", "filters": filters, "limit": 15, "page": 1}
+    payload = {"filters": filters, "limit": 15, "page": 1}
     try:
-        r = requests.post(f"{BASE_URL}/search/spending_by_category/", json=payload, timeout=15)
+        r = requests.post(f"{BASE_URL}/search/spending_by_category/recipient_duns/", json=payload, timeout=15)
         r.raise_for_status()
         results = r.json().get("results", [])
         if not results:
@@ -79,9 +84,9 @@ def fetch_award_trend(county_fips, agency_id):
         }
         if agency_id:
             filters["agencies"] = [{"type": "awarding", "tier": "toptier", "toptier_code": agency_id}]
-        payload = {"category": "recipient_duns", "filters": filters, "limit": 50, "page": 1}
+        payload = {"filters": filters, "limit": 50, "page": 1}
         try:
-            r = requests.post(f"{BASE_URL}/search/spending_by_category/", json=payload, timeout=15)
+            r = requests.post(f"{BASE_URL}/search/spending_by_category/recipient_duns/", json=payload, timeout=15)
             r.raise_for_status()
             results = r.json().get("results", [])
             total = sum(x.get("amount", 0) for x in results)
@@ -99,9 +104,9 @@ def fetch_naics_breakdown(county_fips, fiscal_year, agency_id):
     }
     if agency_id:
         filters["agencies"] = [{"type": "awarding", "tier": "toptier", "toptier_code": agency_id}]
-    payload = {"category": "naics", "filters": filters, "limit": 8, "page": 1}
+    payload = {"filters": filters, "limit": 8, "page": 1}
     try:
-        r = requests.post(f"{BASE_URL}/search/spending_by_category/", json=payload, timeout=15)
+        r = requests.post(f"{BASE_URL}/search/spending_by_category/naics/", json=payload, timeout=15)
         r.raise_for_status()
         results = r.json().get("results", [])
         if not results:
@@ -124,7 +129,7 @@ with st.sidebar:
     agency_id = DEFENSE_AGENCIES[agency_label]
     fiscal_year = st.selectbox("Fiscal Year", FISCAL_YEARS, index=0)
     st.markdown("---")
-    st.markdown("<div style='font-size:0.72rem; color:#484f58; line-height:1.6;'>Data via <b>USASpending.gov</b> public API.<br>Contracts only (award types A–D).<br>Place of performance = county FIPS.<br><br>Built by <b>Matt</b> · Georgetown MBA '26<br>Army EOD Veteran</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.72rem; color:#484f58; line-height:1.6;'>Data via <b>USASpending.gov</b> public API.<br>Contracts only (award types A–D).<br>Place of performance = county FIPS.</div>", unsafe_allow_html=True)
 
 # ── Header
 st.markdown("# NoVA Defense Contract Pulse")
@@ -154,7 +159,7 @@ if not df_contractors.empty:
     with col1:
         st.markdown(f"<div class='metric-card'><div class='metric-label'>Top-15 Obligations (FY{fiscal_year})</div><div class='metric-value'>${total_obligations/1e9:.2f}B</div></div>", unsafe_allow_html=True)
     with col2:
-        st.markdown(f"<div class='metric-card'><div class='metric-label'>Top Contractor</div><div class='metric-value' style='font-size:1rem; padding-top:0.4rem;'>{top_contractor[:28]}{'…' if len(top_contractor)>28 else ''}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-card'><div class='metric-label'>Top Contractor</div><div class='metric-value'>{top_contractor[:22]}{'…' if len(top_contractor)>22 else ''}</div></div>", unsafe_allow_html=True)
     with col3:
         st.markdown(f"<div class='metric-card'><div class='metric-label'>Contractors Ranked</div><div class='metric-value'>{num_contractors}</div></div>", unsafe_allow_html=True)
     with col4:
@@ -165,30 +170,32 @@ else:
 
 st.markdown("")
 
-# ── Charts
-left, right = st.columns([3, 2])
+# ── Row 1: Bar chart + Trend line
+st.markdown("#### Top Contractors by DoD Obligation")
+if not df_contractors.empty:
+    fig = px.bar(
+        df_contractors.head(10), x="Obligations ($)", y="Contractor", orientation="h",
+        color="Obligations ($)", color_continuous_scale=["#1f2937", "#1d4ed8", "#58a6ff"],
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#c9d1d9",
+        coloraxis_showscale=False,
+        xaxis=dict(gridcolor="#21262d", tickformat="$,.0f"),
+        yaxis=dict(gridcolor="rgba(0,0,0,0)", autorange="reversed", tickfont=dict(size=11)),
+        margin=dict(l=0, r=10, t=10, b=30), height=400,
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    with st.expander("View raw table"):
+        st.dataframe(df_contractors.style.format({"Obligations ($)": "${:,.0f}"}), use_container_width=True, hide_index=True)
+else:
+    st.info("No contractor data available.")
 
-with left:
-    st.markdown("#### Top Contractors by DoD Obligation")
-    if not df_contractors.empty:
-        fig = px.bar(
-            df_contractors.head(10), x="Obligations ($)", y="Contractor", orientation="h",
-            color="Obligations ($)", color_continuous_scale=["#1f2937", "#1d4ed8", "#58a6ff"],
-        )
-        fig.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#c9d1d9",
-            coloraxis_showscale=False,
-            xaxis=dict(gridcolor="#21262d", tickformat="$,.0f"),
-            yaxis=dict(gridcolor="rgba(0,0,0,0)", autorange="reversed", tickfont=dict(size=11)),
-            margin=dict(l=0, r=10, t=10, b=10), height=380,
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        with st.expander("View raw table"):
-            st.dataframe(df_contractors.style.format({"Obligations ($)": "${:,.0f}"}), use_container_width=True, hide_index=True)
-    else:
-        st.info("No contractor data available.")
+st.markdown("")
 
-with right:
+# ── Row 2: Trend + NAICS side by side
+col_trend, col_naics = st.columns(2)
+
+with col_trend:
     st.markdown("#### Multi-Year Obligation Trend")
     if not df_trend.empty and df_trend["Obligations ($B)"].sum() > 0:
         fig2 = go.Figure()
@@ -200,12 +207,13 @@ with right:
         fig2.update_layout(
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#c9d1d9",
             xaxis=dict(gridcolor="#21262d"), yaxis=dict(gridcolor="#21262d", tickprefix="$", ticksuffix="B"),
-            margin=dict(l=0, r=10, t=10, b=10), height=180, showlegend=False,
+            margin=dict(l=0, r=10, t=10, b=10), height=360, showlegend=False,
         )
         st.plotly_chart(fig2, use_container_width=True)
     else:
         st.info("Trend data unavailable.")
 
+with col_naics:
     st.markdown("#### Top NAICS Sectors")
     if not df_naics.empty:
         fig3 = px.pie(
@@ -214,8 +222,8 @@ with right:
         )
         fig3.update_layout(
             paper_bgcolor="rgba(0,0,0,0)", font_color="#c9d1d9",
-            legend=dict(font=dict(size=10)), margin=dict(l=0, r=0, t=10, b=10),
-            height=185, showlegend=True,
+            legend=dict(font=dict(size=8), orientation="h", yanchor="top", y=-0.05, xanchor="center", x=0.5),
+            margin=dict(l=0, r=0, t=10, b=80), height=360, showlegend=True,
         )
         fig3.update_traces(textinfo="none")
         st.plotly_chart(fig3, use_container_width=True)
